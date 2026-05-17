@@ -20,9 +20,9 @@ variable "aws_endpoint" {
   default     = "http://devops.tomfern.com:31566"
 }
 
-variable "vida_aws_master" {
+variable "bucket_name" {
   description = "The name of the S3 bucket"
   type        = string
-  default     = "my-test-bucket"
+  default     = "vida_aws_master"
 }
 
