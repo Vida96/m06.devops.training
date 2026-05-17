@@ -37,8 +37,6 @@ blocks:
             - terraform init
             - 'artifact push workflow .terraform '
             - artifact push workflow .terraform.lock.hcl
-      secrets:
-        - name: localstack
   - name: Deploy
     dependencies:
       - Initalize
@@ -56,14 +54,10 @@ blocks:
             - terraform console <<< "var.aws_endpoint"
             - terraform apply -auto-approve
             - artifact push workflow terraform.tfstate
-      secrets:
-        - name: localstack
   - name: Backet
     dependencies:
       - Deploy
     task:
-      secrets:
-        - name: localstack
       jobs:
         - name: Use the backet
           commands:
@@ -79,8 +73,6 @@ blocks:
     dependencies:
       - Backet
     task:
-      secrets:
-        - name: localstack
       jobs:
         - name: Destroy the bucket
           commands:
