@@ -17,11 +17,11 @@ global_job_config:
     commands:
       - checkout
 blocks:
-  - name: Init
+  - name: Initalize
     dependencies: []
     task:
       jobs:
-        - name: "\U0001F7E2 Run Tests"
+        - name: Init stage
           commands:
             - cd 1-terraform-apply
             - echo "Initalizing run"
@@ -30,14 +30,52 @@ blocks:
             - artifact push workflow .terraform.lock.hcl
       secrets:
         - name: localstack
-  - name: "\U0001F680 Deploy"
+  - name: Deploy
     dependencies:
-      - Init
+      - Initalize
     task:
       jobs:
-        - name: "\U0001F4E6 Deploy to Production"
+        - name: 'Pull '
           commands:
-            - echo "Building application..."
-            - echo "Running security checks..."
-            - echo "Deploying to production..."
-            - echo "Deployment completed successfully!"
+            - cd 1-terraform-apply
+            - echo "Terraform deployment"
+            - 'artifact pull workflow .terraform  '
+            - artifact pull workflow .terraform.lock.hcl
+            - chmod -R +x .terraform
+            - 'terraform validate  '
+            - terraform apply -auto-approve
+            - artifact push workflow terraform.tfstate
+      secrets:
+        - name: localstack
+  - name: Backet
+    dependencies:
+      - Deploy
+    task:
+      secrets:
+        - name: localstack
+      jobs:
+        - name: Use the backet
+          commands:
+            - echo "Deploy"
+            - 'export AWS_ENDPOINT_URL=http://devops.tomfern.com:31566'
+            - 'aws() {'
+            - '  command aws --endpoint-url=$AWS_ENDPOINT_URL "$@"'
+            - '}'
+            - 'aws s3 cp README.md s3://my-test-bucket/'
+            - 'aws s3 ls s3://my-test-bucket'
+            - 'aws s3 rm s3://my-test-bucket/README.md'
+  - name: Destroy
+    dependencies:
+      - Backet
+    task:
+      secrets:
+        - name: localstack
+      jobs:
+        - name: Destroy the bucket
+          commands:
+            - cd 1-terraform-apply
+            - artifact pull workflow .terraform --force
+            - artifact pull workflow .terraform.lock.hcl --force
+            - artifact pull workflow terraform.tfstate --force
+            - chmod -R +x .terraform
+            - terraform destroy -auto-approve
